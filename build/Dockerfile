@@ -22,7 +22,7 @@ SHELL ["/bin/bash", "-c"]
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
         ffmpeg \
-        git \
+	    git \
         git-core \
         g++ \
         vim \
@@ -40,11 +40,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libfreetype6-dev \
         libhdf5-serial-dev \
         libzmq3-dev \
-        libcairo2-dev \
         pkg-config \
         software-properties-common \
         unzip \
-        wget
+        wget \
+        imagemagick
 
 # Install TensorRT if not building for PowerPC
 # NOTE: libnvinfer uses cuda11.1 versions
@@ -72,14 +72,13 @@ RUN apt update -y && \
 
 RUN ln -s $(which python3) /usr/local/bin/python
 
-RUN python -m pip install --upgrade pip && \
-    pip install tensorflow==2.5.0 tf-models-official==2.5.1 tensorflow_io==0.19.1 pyparsing==2.4.2 pycairo
+RUN python3 -m pip install tensorflow==2.5.0
 
 WORKDIR /app
 
 COPY requirements.txt .
 RUN python3 -m pip install -r requirements.txt
-RUN python3 -m pip install git+https://github.com/philferriere/cocoapi.git#subdirectory=PythonAPI
+RUN python3 -m pip install git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI
 
 ENV TF_CPP_MIN_LOG_LEVEL=2
 
@@ -94,6 +93,12 @@ RUN git clone https://github.com/tensorflow/models.git && \
     cp object_detection/packages/tf2/setup.py . && \
     python -m pip install .
 
-# Install google cloud SDK
-RUN curl -sSL https://sdk.cloud.google.com > /tmp/gcl && bash /tmp/gcl --install-dir=~/gcloud --disable-prompts
-ENV PATH="$PATH:/root/gcloud/google-cloud-sdk/bin"
+# Install google cloud sdk
+RUN curl -sSL https://sdk.cloud.google.com | bash
+ENV PATH "$PATH:/root/google-cloud-sdk/bin"
+
+# Fixing ImportError: SystemError: <built-in method __contains__ of dict object at 0x7f59d17fc700>
+# returned a result with an error set
+# Numpy: 1.22.2
+RUN pip install numpy -U
+RUN pip install matplotlib==3.1.1
