@@ -141,20 +141,104 @@ python inference_video.py --labelmap_path label_map.pbtxt --model_path experimen
 ## Submission Template
 
 ### Project overview
-This section should contain a brief description of the project and what we are trying to achieve. Why is object detection such an important component of self driving car systems?
+This repository is for `Udacity Self Driving Car Engineer Nanodegree` project.
+
+The final project's goal is implement an object detection model for self-driving car. Object detection is such an important component of self driving car systems, the Level 5 for self driving car is driving without the human control and goal to functional safety.
+
+The project 
 
 ### Set up
-This section should contain a brief description of the steps to follow to run the code for this repository.
+You own the NVIDIA GPU for the host setup and use the Dockerfile to create the docker image from `build` folder.
+
+#### Create the docker image
+```
+$ source ./build.sh
+```
+
+#### Run the image to create container
+```
+$ source ./run.sh
+```
 
 ### Dataset
+You need to download the `Waymo` open dataset from Google Cloud.
+
+#### Login Google Cloud via your Google account
+```
+$ gcloud auth login
+```
+
+#### Download the dataset
+```
+$ python download_process.py --data_dir data
+```
+
+#### Split the dataset
+```
+$ mkdir data/test data/train data/val
+$ python create_splits.py --source data/processed --destination data 
+```
+
 #### Dataset analysis
-This section should contain a quantitative and qualitative description of the dataset. It should include images, charts and other visualizations.
+The dataset presents most of the labels being associated with cars and pedestrians with many weather conditions and multiple objects in a sample image. The proportionate amount of the counts of the different labels are in `Exploratory Data Analysis.ipynb` file. 
+
+![](images/Data_Analysis/Class_Distribution.png)
+
 #### Cross validation
-This section should detail the cross validation strategy and justify your approach.
+We shuffle the dataset and split into `training`, `testing`, and `validation` sets. we are using `75%` and `15%` for training and validation. And using `10%` for testing to check the error rate. 
 
 ### Training
 #### Reference experiment
-This section should detail the results of the reference experiment. It should includes training metrics and a detailed explanation of the algorithm's performances.
+We use `SSD Resnet50 640x640` model and trained it with pre-trained weight.
+The configuration file for training is the one generated base on ./pipeline.config and placed at `experiments/reference/pipeline_new.config`.
+
+![](images/reference/Loss_classification_loss.png)
+![](images/reference/Loss_localization_loss.png)
+![](images/reference/Loss_regularization_loss.png)
+![](images/reference/Loss_total_loss.png)
+![](images/reference/learning_rate.png)
+
+At 24,000 steps, the reference model achieved the following metrics on the validation set:
+
+| mAP | mAP (large) | mAP (medium) | mAP (small) | mAP (@.5 IOU) | mAP (@.75 IOU) |
+|----------- | ----------- | ----------- | ----------- | ----------- | ----------- |
+|  0.03937 | 0.1125 | 0.1409 | 0.01914 | 0.08342 | 0.03361 |
+
+
+| AR@1 | AR@10 | AR@100 | AR@100 (large) | AR@100 (medium) | AR@100 (small) |
+|------|------|------|------|------|------|
+| 0.01296 | 0.04845 | 0.08243 | 0.2099 | 0.2293 | 0.04969 |
 
 #### Improve on the reference
-This section should highlight the different strategies you adopted to improve your model. It should contain relevant figures and details of your findings.
+The configuration file at `experiments/improve/pipeline_new.config`.
+
+We reduce the `warm up learning rate` from `0.013333` to `0.001` and the performance is awesome.
+
+The following figures is compare improve model between reference model.
+
+The `orange line` is the `reference` model.
+
+The `red line` is the `improve` model.
+
+![](images/improve/Loss_classification_loss.png)
+![](images/improve/Loss_localization_loss.png)
+![](images/improve/Loss_regularization_loss.png)
+![](images/improve/Loss_total_loss.png)
+![](images/improve/learning_rate.png)
+
+| mAP | mAP (large) | mAP (medium) | mAP (small) | mAP (@.5 IOU) | mAP (@.75 IOU) |
+|----------- | ----------- | ----------- | ----------- | ----------- | ----------- |
+|  0.04943 | 0.1034 | 0.2012 | 0.0256 | 0.1004 | 0.0462 |
+
+
+| AR@1 | AR@10 | AR@100 | AR@100 (large) | AR@100 (medium) | AR@100 (small) |
+|------|------|------|------|------|------|
+| 0.01545 | 0.06445 | 0.1011 | 0.2507 | 0.2886 | 0.0612 |
+
+The improve model detects correct objects without wrong objects.
+
+![](images/eval_image.png)
+![](images/eval_image_2.png)
+
+The following GIF, shows the model's inference:
+![](animation.gif)
